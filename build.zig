@@ -11,9 +11,11 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    exe.addCSourceFile(.{
-        .file = b.path("main.c"),
-        .flags = &[_][]const u8{},
+    exe.addCSourceFiles(.{
+        .files = &.{
+            "main.c",
+            "display.c",
+        },
     });
 
     exe.linkLibC();
