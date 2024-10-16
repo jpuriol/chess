@@ -15,6 +15,7 @@ pub fn build(b: *std.Build) void {
         .files = &.{
             "main.c",
             "display.c",
+            "logic.c",
         },
     });
 
