@@ -1,9 +1,16 @@
 #include "display.h"
 
 #include <ncurses.h>
+#include <locale.h>
+#include <wchar.h>
+
+#define CUSTOM_GREY 8
 
 void init_ncurses()
 {
+    // Set the locale for Unicode support
+    setlocale(LC_ALL, "");
+
     initscr();
     cbreak();
     keypad(stdscr, TRUE);
@@ -14,16 +21,74 @@ void init_ncurses()
     init_pair(1, COLOR_WHITE, COLOR_BLACK); // White pieces: white text on black
     init_pair(2, COLOR_BLACK, COLOR_WHITE); // Black pieces: black text on white
 
-    // Define brownish colors for the chessboard squares
+    // Define colors for the chessboard squares
+    init_color(CUSTOM_GREY, 700, 700, 700);
     init_color(COLOR_YELLOW, 500, 300, 150); // Light brown (custom color)
-    init_pair(3, COLOR_BLACK, COLOR_YELLOW); // Light square (brownish)
+    init_pair(3, CUSTOM_GREY, COLOR_YELLOW); // Light square (brownish)
     init_color(COLOR_RED, 400, 200, 100);    // Dark brown (custom color)
-    init_pair(4, COLOR_WHITE, COLOR_RED);    // Dark square (brownish)
+    init_pair(4, CUSTOM_GREY, COLOR_RED);    // Dark square (brownish)
 }
 
 void close_ncurses()
 {
     endwin();
+}
+
+wchar_t *unicode_piece_char(Piece piece)
+{
+    wchar_t *piece_char = L" ";
+
+    // Use Unicode characters for white and black pieces
+    if (piece.player == WHITE)
+    {
+        switch (piece.type)
+        {
+        case PAWN:
+            piece_char = L"♙"; // Unicode for white pawn
+            break;
+        case ROOK:
+            piece_char = L"♖"; // Unicode for white rook
+            break;
+        case KNIGHT:
+            piece_char = L"♘"; // Unicode for white knight
+            break;
+        case BISHOP:
+            piece_char = L"♗"; // Unicode for white bishop
+            break;
+        case QUEEN:
+            piece_char = L"♕"; // Unicode for white queen
+            break;
+        case KING:
+            piece_char = L"♔"; // Unicode for white king
+            break;
+        }
+    }
+    else if (piece.player == BLACK)
+    {
+        switch (piece.type)
+        {
+        case PAWN:
+            piece_char = L"♟"; // Unicode for black pawn
+            break;
+        case ROOK:
+            piece_char = L"♜"; // Unicode for black rook
+            break;
+        case KNIGHT:
+            piece_char = L"♞"; // Unicode for black knight
+            break;
+        case BISHOP:
+            piece_char = L"♝"; // Unicode for black bishop
+            break;
+        case QUEEN:
+            piece_char = L"♛"; // Unicode for black queen
+            break;
+        case KING:
+            piece_char = L"♚"; // Unicode for black king
+            break;
+        }
+    }
+
+    return piece_char;
 }
 
 void draw_board(Piece board[BOARD_SIZE][BOARD_SIZE])
@@ -68,30 +133,11 @@ void draw_board(Piece board[BOARD_SIZE][BOARD_SIZE])
             mvprintw(y_offset, x_offset, "+----+");
             mvprintw(y_offset + 1, x_offset, "|    |");
 
+            mvprintw(y_offset + 2, x_offset, "|    |");
             // Display the piece inside the square
-            mvprintw(y_offset + 2, x_offset, "|");
-
-            if (board[y][x].player == WHITE)
-            {
-                attron(COLOR_PAIR(1)); // White piece color
-            }
-            else if (board[y][x].player == BLACK)
-            {
-                attron(COLOR_PAIR(2)); // Black piece color
-            }
-
-            printw(" %c ", board[y][x].type); // Print the piece type (e.g., P, R, N)
-
-            // Turn off color
-            attroff(COLOR_PAIR(1));
-            attroff(COLOR_PAIR(2));
-
-            if ((y + x) % 2 == 0)
-                attron(COLOR_PAIR(3)); // Light square
-            else
-                attron(COLOR_PAIR(4)); // Dark square
-
-            printw(" |");
+            attron(A_BOLD);
+            mvaddwstr(y_offset + 2, x_offset + 2, unicode_piece_char(board[y][x]));
+            attroff(A_BOLD);
 
             // Draw the rest of the square
             mvprintw(y_offset + 3, x_offset, "|    |");
