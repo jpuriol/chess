@@ -41,7 +41,7 @@ int main()
         }
         else
         {
-            mvprintw(38, 5, "Invalid move! Press any key to try again...");
+            display_invalid_move();
             getch();
         }
     }

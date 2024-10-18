@@ -4,7 +4,11 @@
 #include <locale.h>
 #include <wchar.h>
 
-#define CUSTOM_GREY 8
+#define MY_TAG_COLOR 9
+#define MY_LIGHT_GREY 10
+#define MY_DARK_GREY 11
+#define MY_LIGHT_BROWN 12
+#define MY_DARK_BROWN 13
 
 void init_ncurses()
 {
@@ -17,16 +21,23 @@ void init_ncurses()
 
     // Initialize colors
     start_color();
-    // Define color pairs: foreground (text color), background (background color)
-    init_pair(1, COLOR_WHITE, COLOR_BLACK); // White pieces: white text on black
-    init_pair(2, COLOR_BLACK, COLOR_WHITE); // Black pieces: black text on white
+
+    init_color(MY_TAG_COLOR, 300, 300, 600);
+    init_color(MY_LIGHT_GREY, 800, 800, 800);
+    init_color(MY_DARK_GREY, 50, 50, 50);
+    init_color(MY_LIGHT_BROWN, 500, 300, 150);
+    init_color(MY_DARK_BROWN, 400, 200, 100);
+
+    init_pair(1, COLOR_WHITE, MY_TAG_COLOR);
+    init_pair(2, COLOR_BLACK, MY_TAG_COLOR);
 
     // Define colors for the chessboard squares
-    init_color(CUSTOM_GREY, 700, 700, 700);
-    init_color(COLOR_YELLOW, 500, 300, 150); // Light brown (custom color)
-    init_pair(3, CUSTOM_GREY, COLOR_YELLOW); // Light square (brownish)
-    init_color(COLOR_RED, 400, 200, 100);    // Dark brown (custom color)
-    init_pair(4, CUSTOM_GREY, COLOR_RED);    // Dark square (brownish)
+
+    init_pair(3, MY_DARK_GREY, MY_LIGHT_BROWN);
+    init_pair(4, MY_LIGHT_GREY, MY_LIGHT_BROWN);
+
+    init_pair(5, MY_DARK_GREY, MY_DARK_BROWN);
+    init_pair(6, MY_LIGHT_GREY, MY_DARK_BROWN);
 }
 
 void close_ncurses()
@@ -123,29 +134,43 @@ void draw_board(Piece board[BOARD_SIZE][BOARD_SIZE])
         {
             int x_offset = offset_x + (x * square_width); // Horizontal offset for each square
 
+            Piece piece = board[y][x];
+
             // Choose color based on the square position
             if ((y + x) % 2 == 0)
-                attron(COLOR_PAIR(3)); // Light square
+            {
+                // Light square
+                if (piece.player == BLACK)
+                    attron(COLOR_PAIR(3));
+                else
+                    attron(COLOR_PAIR(4));
+            }
             else
-                attron(COLOR_PAIR(4)); // Dark square
+            {
+                // Dark square
+                if (piece.player == BLACK)
+                    attron(COLOR_PAIR(5));
+                else
+                    attron(COLOR_PAIR(6));
+            }
 
             // Draw the square borders
-            mvprintw(y_offset, x_offset, "+----+");
-            mvprintw(y_offset + 1, x_offset, "|    |");
+            mvprintw(y_offset + 0, x_offset, "      ");
+            mvprintw(y_offset + 1, x_offset, "      ");
 
-            mvprintw(y_offset + 2, x_offset, "|    |");
+            mvprintw(y_offset + 2, x_offset, "  %c   ", board[y][x].type);
             // Display the piece inside the square
-            attron(A_BOLD);
-            mvaddwstr(y_offset + 2, x_offset + 2, unicode_piece_char(board[y][x]));
-            attroff(A_BOLD);
+            mvaddwstr(y_offset + 2, x_offset + 3, unicode_piece_char(board[y][x]));
 
             // Draw the rest of the square
-            mvprintw(y_offset + 3, x_offset, "|    |");
-            mvprintw(y_offset + 4, x_offset, "+----+");
+            mvprintw(y_offset + 3, x_offset, "      ");
+            mvprintw(y_offset + 4, x_offset, "      ");
 
             // Turn off square background colors
             attroff(COLOR_PAIR(3));
             attroff(COLOR_PAIR(4));
+            attroff(COLOR_PAIR(5));
+            attroff(COLOR_PAIR(6));
         }
     }
 }
@@ -161,11 +186,15 @@ void display_info(int turn)
     attron(A_BOLD); // Turn on bold text
     if (turn == WHITE)
     {
-        printw("WHITE");
+        attron(COLOR_PAIR(1));
+        printw(" WHITE ");
+        attroff(COLOR_PAIR(1));
     }
     else
     {
-        printw("BLACK");
+        attron(COLOR_PAIR(2));
+        printw(" BLACK ");
+        attroff(COLOR_PAIR(2));
     }
     attroff(A_BOLD); // Turn off bold text
 
@@ -175,4 +204,13 @@ void display_info(int turn)
     attroff(A_ITALIC); // Turn off italic
 
     mvprintw(offset_y + 5, offset_x, "Your move: ");
+}
+
+void display_invalid_move()
+{
+    int info_width = 40;                    // Set an approximate width for the info block
+    int offset_x = (COLS - info_width) / 2; // Center it on the left side of the screen (1/4 of the screen width)
+    int offset_y = 10;                      // Vertical position
+
+    mvprintw(offset_y, offset_x, "Invalid move! Press any key to try again...");
 }
