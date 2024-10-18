@@ -7,16 +7,18 @@ void init_ncurses()
     initscr();
     cbreak();
     keypad(stdscr, TRUE);
-    curs_set(0);
 
     // Initialize colors
-    if (has_colors())
-    {
-        start_color();
-        // Define color pairs: foreground (text color), background (background color)
-        init_pair(1, COLOR_WHITE, COLOR_BLACK); // White pieces: white text on black
-        init_pair(2, COLOR_BLACK, COLOR_WHITE); // Black pieces: black text on white
-    }
+    start_color();
+    // Define color pairs: foreground (text color), background (background color)
+    init_pair(1, COLOR_WHITE, COLOR_BLACK); // White pieces: white text on black
+    init_pair(2, COLOR_BLACK, COLOR_WHITE); // Black pieces: black text on white
+
+    // Define brownish colors for the chessboard squares
+    init_color(COLOR_YELLOW, 500, 300, 150); // Light brown (custom color)
+    init_pair(3, COLOR_BLACK, COLOR_YELLOW); // Light square (brownish)
+    init_color(COLOR_RED, 400, 200, 100);    // Dark brown (custom color)
+    init_pair(4, COLOR_WHITE, COLOR_RED);    // Dark square (brownish)
 }
 
 void close_ncurses()
@@ -56,6 +58,12 @@ void draw_board(Piece board[BOARD_SIZE][BOARD_SIZE])
         {
             int x_offset = offset_x + (x * square_width); // Horizontal offset for each square
 
+            // Choose color based on the square position
+            if ((y + x) % 2 == 0)
+                attron(COLOR_PAIR(3)); // Light square
+            else
+                attron(COLOR_PAIR(4)); // Dark square
+
             // Draw the square borders
             mvprintw(y_offset, x_offset, "+----+");
             mvprintw(y_offset + 1, x_offset, "|    |");
@@ -78,11 +86,20 @@ void draw_board(Piece board[BOARD_SIZE][BOARD_SIZE])
             attroff(COLOR_PAIR(1));
             attroff(COLOR_PAIR(2));
 
+            if ((y + x) % 2 == 0)
+                attron(COLOR_PAIR(3)); // Light square
+            else
+                attron(COLOR_PAIR(4)); // Dark square
+
             printw(" |");
 
             // Draw the rest of the square
             mvprintw(y_offset + 3, x_offset, "|    |");
             mvprintw(y_offset + 4, x_offset, "+----+");
+
+            // Turn off square background colors
+            attroff(COLOR_PAIR(3));
+            attroff(COLOR_PAIR(4));
         }
     }
 }
