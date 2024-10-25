@@ -45,6 +45,21 @@ void close_ncurses()
     endwin();
 }
 
+void clear_display()
+{
+    clear();
+}
+
+void get_move(char *move)
+{
+    getstr(move);
+}
+
+void wait_for_any_key()
+{
+    getch();
+}
+
 wchar_t *unicode_piece_char(Piece piece)
 {
     wchar_t *piece_char = L" ";

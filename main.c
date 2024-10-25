@@ -1,7 +1,6 @@
-#include <ncurses.h>
 #include <stdlib.h>
-
 #include <string.h>
+
 #include "display.h"
 #include "logic.h"
 
@@ -14,25 +13,25 @@ int main()
 
     init_board(board);
 
-    char input[6];
+    char move[6];
     int sx, sy, dx, dy;
 
     while (1)
     {
-        clear();
+        clear_display();
         draw_board(board);  // Draw the board with colored pieces and labels
         display_info(turn); // Show current player and instructions
 
-        getstr(input); // Get the move input from the user
+        get_move(move); // Get the move input from the user
 
         // Quit the game if the user inputs "q"
-        if (strcmp(input, "q") == 0)
+        if (strcmp(move, "q") == 0)
         {
             break;
         }
 
         // Parse the input into source (sx, sy) and destination (dx, dy)
-        parse_input(input, &sx, &sy, &dx, &dy);
+        parse_input(move, &sx, &sy, &dx, &dy);
 
         // Attempt the move
         if (move_piece(board, sx, sy, dx, dy))
@@ -42,7 +41,7 @@ int main()
         else
         {
             display_invalid_move();
-            getch();
+            wait_for_any_key();
         }
     }
 
