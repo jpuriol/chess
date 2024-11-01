@@ -1,6 +1,10 @@
+const std = @import("std");
+
 const ncurses = @cImport({
     @cInclude("ncurses.h");
 });
+
+const locale = @cImport(@cInclude("locale.h"));
 
 const logic = @import("logic.zig");
 
@@ -8,6 +12,9 @@ pub fn init() void {
     _ = ncurses.initscr();
     _ = ncurses.cbreak();
     // ncurses.keypad(ncurses.stdscr, ncurses.TRUE);
+
+    // Set locale for wide characters (must be set before using Unicode)
+    _ = locale.setlocale(locale.LC_ALL, "");
 
     _ = ncurses.start_color();
 
@@ -17,7 +24,7 @@ pub fn init() void {
     initColor(.darkBrown, 400, 200, 100);
 
     initPair(.lightSquareBlack, .darkGrey, .lightBrown);
-    initPair(.lightSquareWhite, .lightGrey, .darkBrown);
+    initPair(.lightSquareWhite, .lightGrey, .lightBrown);
 
     initPair(.darkSquareBlack, .darkGrey, .darkBrown);
     initPair(.darkSquareWhite, .lightGrey, .darkBrown);
@@ -83,7 +90,6 @@ pub fn readLine() []u8 {
 }
 
 pub fn draw(game: logic.Game) void {
-    _ = game;
     const boardSize = logic.Game.boardSize;
 
     const origin_x = 8;
@@ -126,17 +132,14 @@ pub fn draw(game: logic.Game) void {
 
         x = 0;
         while (x < boardSize) : (x += 1) {
-            const tile_color = if (@mod(y + x, 2) == 0)
-                ColorPair.lightSquareBlack
-            else
-                ColorPair.darkSquareBlack;
-
-            const tile_color_id = @intFromEnum(tile_color);
-            _ = ncurses.attron(ncurses.COLOR_PAIR(tile_color_id));
-            defer _ = ncurses.attroff(ncurses.COLOR_PAIR(tile_color_id));
+            const color = tileColor(game, @intCast(y), @intCast(x));
+            const color_id = @intFromEnum(color);
+            _ = ncurses.attron(ncurses.COLOR_PAIR(color_id));
+            defer _ = ncurses.attroff(ncurses.COLOR_PAIR(color_id));
 
             const x_offset = origin_x + (x * tile_width);
 
+            // Draw the square
             var i: c_int = 0;
             while (i < tile_height) : (i += 1) {
                 _ = ncurses.move(y_offset + i, x_offset);
@@ -145,6 +148,76 @@ pub fn draw(game: logic.Game) void {
                     _ = ncurses.addch(' ');
                 }
             }
+
+            if (game.board[@intCast(y)][@intCast(x)]) |p| {
+                const piece_y = y_offset + (tile_height / 2);
+                const piece_x = x_offset + (tile_width / 2) - 1;
+
+                const piece_ch = char_piece(p);
+                const piece_wch = wchar_piece(p);
+
+                _ = ncurses.move(piece_y, piece_x);
+                _ = ncurses.addch(piece_ch);
+                _ = ncurses.addwstr(piece_wch.ptr);
+            }
         }
     }
+}
+
+fn tileColor(g: logic.Game, y: usize, x: usize) ColorPair {
+    const light = @mod(y + x, 2) == 0;
+
+    // Check if there is a piece at the given position.
+    if (g.board[y][x]) |p| {
+        // If there's a piece, return the appropriate color based on the player and light/dark status.
+        return switch (p.player) {
+            .white => if (light) ColorPair.lightSquareWhite else ColorPair.darkSquareWhite,
+            .black => if (light) ColorPair.lightSquareBlack else ColorPair.darkSquareBlack,
+        };
+    } else {
+        // If there's no piece, return the color for an empty tile based on the light/dark status.
+        return if (light) ColorPair.lightSquareBlack else ColorPair.darkSquareBlack;
+    }
+}
+
+const wchar = c_int;
+
+fn wchar_piece(piece: logic.Piece) []const wchar {
+    const utf8 = switch (piece.player) {
+        .white => switch (piece.type) {
+            .pawn => "♙",
+            .rook => "♖",
+            .knight => "♘",
+            .bishop => "♗",
+            .queen => "♕",
+            .king => "♔",
+        },
+        .black => switch (piece.type) {
+            .pawn => "♟",
+            .rook => "♜",
+            .knight => "♞",
+            .bishop => "♝",
+            .queen => "♛",
+            .king => "♚",
+        },
+    };
+
+    var wchar_array: [1]wchar = undefined;
+
+    const codepoint = std.unicode.utf8Decode(utf8) catch {
+        return wchar_array[0..0]; // Return an empty slice if decoding fails
+    };
+    wchar_array[0] = codepoint;
+    return wchar_array[0..1];
+}
+
+fn char_piece(piece: logic.Piece) c_uint {
+    return switch (piece.type) {
+        .pawn => 'P',
+        .rook => 'R',
+        .knight => 'N',
+        .bishop => 'B',
+        .queen => 'Q',
+        .king => 'K',
+    };
 }
