@@ -84,21 +84,22 @@ pub fn readLine() []u8 {
 
 pub fn draw(game: logic.Game) void {
     _ = game;
+    const boardSize = logic.Game.boardSize;
 
     const origin_x = 8;
-    const origin_y = 2;
+    const origin_y = 3;
     const tile_width = 6;
     const tile_height = 4;
 
     // Draw the column labels (a-h)
     var x: c_int = 0;
-    while (x < logic.boardSize) : (x += 1) {
+    while (x < boardSize) : (x += 1) {
         const column_label = 'a' + x;
 
         const column_center = tile_width / 2;
         const column_label_x = origin_x + (x * tile_width) + column_center;
-        const column_label_y_top = 1;
-        const column_label_y_bottom = 35; // TODO: calculate this value
+        const column_label_y_top = origin_y - 1;
+        const column_label_y_bottom = origin_y + (boardSize * tile_height);
 
         _ = ncurses.mvprintw(column_label_y_top, column_label_x, "%c", column_label);
         _ = ncurses.mvprintw(column_label_y_bottom, column_label_x, "%c", column_label);
@@ -106,14 +107,13 @@ pub fn draw(game: logic.Game) void {
 
     // Draw the row labels (1-8)
     var y: c_int = 0;
-    while (y < logic.boardSize) : (y += 1) {
-        const row_label = logic.boardSize - y;
+    while (y < boardSize) : (y += 1) {
+        const row_label = boardSize - y;
 
         const row_center = tile_height / 2;
         const row_label_y = origin_y + (y * tile_height) + row_center;
-        const row_label_offset = 2;
-        const row_label_x_left = origin_x - row_label_offset;
-        const row_label_y_right = origin_x + (logic.boardSize * tile_width) + row_label_offset;
+        const row_label_x_left = origin_x - 2;
+        const row_label_y_right = origin_x + (boardSize * tile_width) + 1;
 
         _ = ncurses.mvprintw(row_label_y, row_label_x_left, "%d", row_label);
         _ = ncurses.mvprintw(row_label_y, row_label_y_right, "%d", row_label);
@@ -121,11 +121,11 @@ pub fn draw(game: logic.Game) void {
 
     // Draw the board
     y = 0;
-    while (y < logic.boardSize) : (y += 1) {
+    while (y < boardSize) : (y += 1) {
         const y_offset = origin_y + (y * tile_height);
 
         x = 0;
-        while (x < logic.boardSize) : (x += 1) {
+        while (x < boardSize) : (x += 1) {
             const color_pair = if (@mod(y + x, 2) == 0)
                 ColorPair.lightSquareBlack
             else

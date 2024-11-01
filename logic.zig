@@ -14,9 +14,9 @@ const PieceType = enum {
     king,
 };
 
-pub const boardSize = 8;
-
 pub const Game = struct {
+    pub const boardSize = 8;
+
     board: [boardSize][boardSize]?Piece,
     turn: Player,
 };
@@ -30,8 +30,8 @@ pub fn init() Game {
     var x: usize = 0;
     var y: usize = 0;
     // Initialize empty board
-    while (y < boardSize) : (y += 1) {
-        while (x < boardSize) : (x += 1) {
+    while (y < Game.boardSize) : (y += 1) {
+        while (x < Game.boardSize) : (x += 1) {
             game.board[y][x] = null;
         }
     }
