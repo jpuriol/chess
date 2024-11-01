@@ -87,8 +87,8 @@ pub fn draw(game: logic.Game) void {
     const boardSize = logic.Game.boardSize;
 
     const origin_x = 8;
-    const origin_y = 3;
-    const tile_width = 6;
+    const origin_y = 4;
+    const tile_width = 8;
     const tile_height = 4;
 
     // Draw the column labels (a-h)
@@ -126,21 +126,25 @@ pub fn draw(game: logic.Game) void {
 
         x = 0;
         while (x < boardSize) : (x += 1) {
-            const color_pair = if (@mod(y + x, 2) == 0)
+            const tile_color = if (@mod(y + x, 2) == 0)
                 ColorPair.lightSquareBlack
             else
                 ColorPair.darkSquareBlack;
 
-            const square_color = @intFromEnum(color_pair);
-            _ = ncurses.attron(ncurses.COLOR_PAIR(square_color));
-            defer _ = ncurses.attroff(ncurses.COLOR_PAIR(square_color));
+            const tile_color_id = @intFromEnum(tile_color);
+            _ = ncurses.attron(ncurses.COLOR_PAIR(tile_color_id));
+            defer _ = ncurses.attroff(ncurses.COLOR_PAIR(tile_color_id));
 
             const x_offset = origin_x + (x * tile_width);
 
-            _ = ncurses.mvprintw(y_offset + 0, x_offset, "      ");
-            _ = ncurses.mvprintw(y_offset + 1, x_offset, "      ");
-            _ = ncurses.mvprintw(y_offset + 2, x_offset, "      ");
-            _ = ncurses.mvprintw(y_offset + 3, x_offset, "      ");
+            var i: c_int = 0;
+            while (i < tile_height) : (i += 1) {
+                _ = ncurses.move(y_offset + i, x_offset);
+                var j: c_int = 0;
+                while (j < tile_width) : (j += 1) {
+                    _ = ncurses.addch(' ');
+                }
+            }
         }
     }
 }
