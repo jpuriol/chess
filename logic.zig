@@ -6,17 +6,17 @@ const Piece = struct {
 const Player = enum { white, black };
 
 const PieceType = enum {
-    PAWN,
-    ROOK,
-    KNIGHT,
-    BISHOP,
-    QUEEN,
-    KING,
+    pawn,
+    rook,
+    knight,
+    bishop,
+    queen,
+    king,
 };
 
-const boardSize = 8;
+pub const boardSize = 8;
 
-const Game = struct {
+pub const Game = struct {
     board: [boardSize][boardSize]?Piece,
     turn: Player,
 };
