@@ -20,8 +20,16 @@ pub const Game = struct {
     board: [boardSize][boardSize]?Piece,
     turn: Player,
 
-    pub fn move(self: *Game, m: Move) void {
-        self.board[m.dy][m.dx] = self.board[m.sy][m.sx];
+    pub fn move(self: *Game, m: Move) MoveError!void {
+        const piece = self.board[m.sy][m.sx] orelse {
+            return MoveError.NoPieceAtSource;
+        };
+
+        if (piece.player != self.turn) {
+            return MoveError.WrongPlayerTurn;
+        }
+
+        self.board[m.dy][m.dx] = piece;
         self.board[m.sy][m.sx] = null;
 
         self.turn = switch (self.turn) {
@@ -84,8 +92,10 @@ pub fn init() Game {
     return game;
 }
 
-const MoveError = error{
-    InvalidFormat,
+pub const MoveError = error{
+    InvalidNotation,
+    NoPieceAtSource,
+    WrongPlayerTurn,
 };
 
 pub const Move = struct {
@@ -96,19 +106,35 @@ pub const Move = struct {
 
     pub fn parse(input: []const u8) MoveError!Move {
         if (input.len != 4) {
-            return MoveError.InvalidFormat;
+            return MoveError.InvalidNotation;
         }
 
-        const sx = input[0];
-        if ('a' <= sx and sx <= 'b') {
-            return MoveError.InvalidFormat;
-        }
+        const sx = try parseFile(input[0]);
+        const sy = try parseRank(input[1]);
+        const dx = try parseFile(input[2]);
+        const dy = try parseRank(input[3]);
 
         return Move{
-            .sx = sx - 'a',
-            .sy = '8' - input[1],
-            .dx = input[2] - 'a',
-            .dy = '8' - input[3],
+            .sx = sx,
+            .sy = sy,
+            .dx = dx,
+            .dy = dy,
         };
     }
 };
+
+/// Converts a file character (e.g., 'a' to 'h') to a column index (0-based).
+fn parseFile(c: u8) MoveError!u8 {
+    if (c >= 'a' and c <= 'h') {
+        return c - 'a';
+    }
+    return MoveError.InvalidNotation;
+}
+
+/// Converts a rank character (e.g., '1' to '8') to a row index (0-based).
+fn parseRank(c: u8) MoveError!u8 {
+    if (c >= '1' and c <= '8') {
+        return '8' - c;
+    }
+    return MoveError.InvalidNotation;
+}

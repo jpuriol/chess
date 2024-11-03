@@ -19,11 +19,13 @@ pub fn main() void {
             break;
         }
 
-        const m = logic.Move.parse(input) catch {
-            display.informInvalidMove();
+        const m = logic.Move.parse(input) catch |err| {
+            display.informInvalidMove(err);
             continue;
         };
 
-        game.move(m);
+        game.move(m) catch |err| {
+            display.informInvalidMove(err);
+        };
     }
 }

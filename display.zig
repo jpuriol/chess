@@ -111,10 +111,17 @@ pub fn readInput() []const u8 {
     return buffer[0..len];
 }
 
-pub fn informInvalidMove() void {
+pub fn informInvalidMove(err: logic.MoveError) void {
     const line_y = info_y + 7;
 
-    _ = ncurses.mvprintw(line_y, info_x, "Invalid move! Press any key to try again...");
+    const msg = switch (err) {
+        error.InvalidNotation => "Move notation is not valid",
+        error.NoPieceAtSource => "No piece found at the source location",
+        error.WrongPlayerTurn => "Attempted to move opponent's piece",
+    };
+
+    _ = ncurses.mvprintw(line_y, info_x, msg);
+    _ = ncurses.mvprintw(line_y + 1, info_x, "Press any key to try again...");
     _ = ncurses.getch();
 }
 
