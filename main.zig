@@ -4,7 +4,7 @@ const display = @import("display.zig");
 const logic = @import("logic.zig");
 
 pub fn main() void {
-    const game = logic.init();
+    var game = logic.init();
 
     display.init();
     defer display.close();
@@ -13,10 +13,17 @@ pub fn main() void {
         display.clear();
         display.draw(game);
 
-        const input = display.readLine();
+        const input = display.readInput();
 
         if (std.mem.eql(u8, input, "q")) {
             break;
         }
+
+        const m = logic.Move.parse(input) catch {
+            display.informInvalidMove();
+            continue;
+        };
+
+        game.move(m);
     }
 }

@@ -19,6 +19,16 @@ pub const Game = struct {
 
     board: [boardSize][boardSize]?Piece,
     turn: Player,
+
+    pub fn move(self: *Game, m: Move) void {
+        self.board[m.dy][m.dx] = self.board[m.sy][m.sx];
+        self.board[m.sy][m.sx] = null;
+
+        self.turn = switch (self.turn) {
+            .white => .black,
+            .black => .white,
+        };
+    }
 };
 
 pub fn init() Game {
@@ -73,3 +83,32 @@ pub fn init() Game {
 
     return game;
 }
+
+const MoveError = error{
+    InvalidFormat,
+};
+
+pub const Move = struct {
+    sx: u8,
+    sy: u8,
+    dx: u8,
+    dy: u8,
+
+    pub fn parse(input: []const u8) MoveError!Move {
+        if (input.len != 4) {
+            return MoveError.InvalidFormat;
+        }
+
+        const sx = input[0];
+        if ('a' <= sx and sx <= 'b') {
+            return MoveError.InvalidFormat;
+        }
+
+        return Move{
+            .sx = sx - 'a',
+            .sy = '8' - input[1],
+            .dx = input[2] - 'a',
+            .dy = '8' - input[3],
+        };
+    }
+};

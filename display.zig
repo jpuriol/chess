@@ -75,12 +75,29 @@ pub fn waitForKey() void {
 
 var buffer: [32]u8 = undefined;
 
-pub fn readLine() []const u8 {
+pub fn readInput() []const u8 {
     var len: usize = 0;
+
+    const line_y = info_y + 5;
+    _ = ncurses.move(line_y, info_x);
 
     while (len < buffer.len) : (_ = ncurses.refresh()) {
         const ch = @as(u8, @intCast(ncurses.getch()));
         if (ch == '\n') break;
+
+        if (ch == std.ascii.control_code.del) {
+            if (len > 0) {
+                // Move the cursor back and delete the character
+                const x = info_x + len;
+                _ = ncurses.move(line_y, @intCast(x - 1));
+                _ = ncurses.addch(' ');
+                _ = ncurses.move(line_y, @intCast(x - 1));
+
+                // Decrement length
+                len -= 1;
+            }
+            continue; // Skip adding character to buffer
+        }
 
         if (!std.ascii.isAlphanumeric(ch)) {
             continue; // Skip adding character to buffer
@@ -94,18 +111,27 @@ pub fn readLine() []const u8 {
     return buffer[0..len];
 }
 
+pub fn informInvalidMove() void {
+    const line_y = info_y + 7;
+
+    _ = ncurses.mvprintw(line_y, info_x, "Invalid move! Press any key to try again...");
+    _ = ncurses.getch();
+}
+
+// Basic parameters
+const origin_x = 8;
+const origin_y = 2;
+
+// Board parameters
+const tile_width = 11;
+const tile_height = 5;
+
+// Information section parameters
+const info_x = origin_x + (tile_width * logic.Game.boardSize) + 15;
+const info_y = origin_y + ((tile_height * logic.Game.boardSize) / 2) - 4;
+
 pub fn draw(game: logic.Game) void {
-    const boardSize = logic.Game.boardSize;
-
-    const origin_x = 8;
-    const origin_y = 2;
-    const tile_width = 11;
-    const tile_height = 5;
-
-    drawBoard(game, origin_x, origin_y, tile_width, tile_height);
-
-    const info_x = origin_x + (tile_width * boardSize) + 15;
-    const info_y = origin_y + ((tile_height * boardSize) / 2) - 4;
+    drawBoard(game);
 
     _ = ncurses.mvprintw(info_y, info_x, "Current player: ");
     const color = switch (game.turn) {
@@ -126,10 +152,9 @@ pub fn draw(game: logic.Game) void {
 
     _ = ncurses.mvprintw(info_y + 2, info_x, "Enter your move as chess notation (e.g., e2e4).");
     _ = ncurses.mvprintw(info_y + 3, info_x, "('q' to quit)");
-    _ = ncurses.move(info_y + 5, info_x);
 }
 
-fn drawBoard(game: logic.Game, origin_x: comptime_int, origin_y: comptime_int, tile_width: comptime_int, tile_height: comptime_int) void {
+fn drawBoard(state: logic.Game) void {
     const boardSize = logic.Game.boardSize;
 
     // Draw the column labels (a-h)
@@ -167,7 +192,7 @@ fn drawBoard(game: logic.Game, origin_x: comptime_int, origin_y: comptime_int, t
 
         x = 0;
         while (x < boardSize) : (x += 1) {
-            const color = tileColor(game, @intCast(y), @intCast(x));
+            const color = tileColor(state, @intCast(y), @intCast(x));
             const color_id = @intFromEnum(color);
             _ = ncurses.attron(ncurses.COLOR_PAIR(color_id));
             defer _ = ncurses.attroff(ncurses.COLOR_PAIR(color_id));
@@ -184,7 +209,7 @@ fn drawBoard(game: logic.Game, origin_x: comptime_int, origin_y: comptime_int, t
                 }
             }
 
-            if (game.board[@intCast(y)][@intCast(x)]) |p| {
+            if (state.board[@intCast(y)][@intCast(x)]) |p| {
                 const piece_y = y_offset + (tile_height / 2);
                 const piece_x = x_offset + (tile_width / 2);
 
