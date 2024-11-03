@@ -93,9 +93,39 @@ pub fn draw(game: logic.Game) void {
     const boardSize = logic.Game.boardSize;
 
     const origin_x = 8;
-    const origin_y = 4;
-    const tile_width = 8;
-    const tile_height = 4;
+    const origin_y = 2;
+    const tile_width = 11;
+    const tile_height = 5;
+
+    drawBoard(game, origin_x, origin_y, tile_width, tile_height);
+
+    const info_x = origin_x + (tile_width * boardSize) + 15;
+    const info_y = origin_y + ((tile_height * boardSize) / 2) - 4;
+
+    _ = ncurses.mvprintw(info_y, info_x, "Current player: ");
+    const color = switch (game.turn) {
+        .white => ColorPair.darkSquareWhite,
+        .black => ColorPair.darkSquareBlack,
+    };
+    const color_id = @intFromEnum(color);
+    _ = ncurses.attron(ncurses.COLOR_PAIR(color_id));
+    switch (game.turn) {
+        .white => {
+            _ = ncurses.printw(" WHITE ");
+        },
+        .black => {
+            _ = ncurses.printw(" BLACK ");
+        },
+    }
+    _ = ncurses.attroff(ncurses.COLOR_PAIR(color_id));
+
+    _ = ncurses.mvprintw(info_y + 2, info_x, "Enter your move as chess notation (e.g., e2e4).");
+    _ = ncurses.mvprintw(info_y + 3, info_x, "('q' to quit)");
+    _ = ncurses.move(info_y + 5, info_x);
+}
+
+fn drawBoard(game: logic.Game, origin_x: comptime_int, origin_y: comptime_int, tile_width: comptime_int, tile_height: comptime_int) void {
+    const boardSize = logic.Game.boardSize;
 
     // Draw the column labels (a-h)
     var x: c_int = 0;
@@ -151,15 +181,14 @@ pub fn draw(game: logic.Game) void {
 
             if (game.board[@intCast(y)][@intCast(x)]) |p| {
                 const piece_y = y_offset + (tile_height / 2);
-                const piece_x = x_offset + (tile_width / 2) - 1;
+                const piece_x = x_offset + (tile_width / 2);
 
-                const piece_ch = char_piece(p);
-                const piece_wch = wchar_piece(p);
-                const wchar_array = &[_:0]wchar{piece_wch};
+                const piece_ch = charPiece(p);
+                const piece_wch = &[_:0]c_int{wcharPiece(p)};
 
                 _ = ncurses.move(piece_y, piece_x);
                 _ = ncurses.addch(piece_ch);
-                _ = ncurses.addwstr(wchar_array.ptr);
+                _ = ncurses.addwstr(piece_wch.ptr);
             }
         }
     }
@@ -168,7 +197,6 @@ pub fn draw(game: logic.Game) void {
 fn tileColor(g: logic.Game, y: usize, x: usize) ColorPair {
     const light = @mod(y + x, 2) == 0;
 
-    // Check if there is a piece at the given position.
     if (g.board[y][x]) |p| {
         // If there's a piece, return the appropriate color based on the player and light/dark status.
         return switch (p.player) {
@@ -181,9 +209,7 @@ fn tileColor(g: logic.Game, y: usize, x: usize) ColorPair {
     }
 }
 
-const wchar = c_int;
-
-fn wchar_piece(piece: logic.Piece) wchar {
+fn wcharPiece(piece: logic.Piece) c_int {
     const utf8 = switch (piece.player) {
         .white => switch (piece.type) {
             .pawn => "♙",
@@ -204,11 +230,11 @@ fn wchar_piece(piece: logic.Piece) wchar {
     };
 
     const codepoint = std.unicode.utf8Decode(utf8) catch unreachable;
-    const wch: wchar = codepoint;
-    return wch;
+    // const wch: c_int = codepoint;
+    return codepoint;
 }
 
-fn char_piece(piece: logic.Piece) c_uint {
+fn charPiece(piece: logic.Piece) c_uint {
     return switch (piece.type) {
         .pawn => 'P',
         .rook => 'R',
