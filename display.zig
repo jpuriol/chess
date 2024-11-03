@@ -14,7 +14,7 @@ pub fn init() void {
     // ncurses.keypad(ncurses.stdscr, ncurses.TRUE);
 
     // Set locale for wide characters (must be set before using Unicode)
-    _ = locale.setlocale(locale.LC_ALL, "");
+    _ = locale.setlocale(locale.LC_ALL, "en_US.UTF-8");
 
     _ = ncurses.start_color();
 
@@ -75,7 +75,7 @@ pub fn waitForKey() void {
 
 var buffer: [32]u8 = undefined;
 
-pub fn readLine() []u8 {
+pub fn readLine() []const u8 {
     var len: usize = 0;
 
     while (len < buffer.len) {
@@ -155,10 +155,11 @@ pub fn draw(game: logic.Game) void {
 
                 const piece_ch = char_piece(p);
                 const piece_wch = wchar_piece(p);
+                const wchar_array = &[_:0]wchar{piece_wch};
 
                 _ = ncurses.move(piece_y, piece_x);
                 _ = ncurses.addch(piece_ch);
-                _ = ncurses.addwstr(piece_wch.ptr);
+                _ = ncurses.addwstr(wchar_array.ptr);
             }
         }
     }
@@ -182,7 +183,7 @@ fn tileColor(g: logic.Game, y: usize, x: usize) ColorPair {
 
 const wchar = c_int;
 
-fn wchar_piece(piece: logic.Piece) []const wchar {
+fn wchar_piece(piece: logic.Piece) wchar {
     const utf8 = switch (piece.player) {
         .white => switch (piece.type) {
             .pawn => "♙",
@@ -202,13 +203,9 @@ fn wchar_piece(piece: logic.Piece) []const wchar {
         },
     };
 
-    var wchar_array: [1]wchar = undefined;
-
-    const codepoint = std.unicode.utf8Decode(utf8) catch {
-        return wchar_array[0..0]; // Return an empty slice if decoding fails
-    };
-    wchar_array[0] = codepoint;
-    return wchar_array[0..1];
+    const codepoint = std.unicode.utf8Decode(utf8) catch unreachable;
+    const wch: wchar = codepoint;
+    return wch;
 }
 
 fn char_piece(piece: logic.Piece) c_uint {

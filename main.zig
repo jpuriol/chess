@@ -9,8 +9,14 @@ pub fn main() void {
     display.init();
     defer display.close();
 
-    display.clear();
-    display.draw(game);
+    while (true) {
+        display.clear();
+        display.draw(game);
 
-    _ = display.readLine();
+        const input = display.readLine();
+
+        if (std.mem.eql(u8, input, "q")) {
+            break;
+        }
+    }
 }
