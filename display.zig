@@ -11,7 +11,7 @@ const logic = @import("logic.zig");
 pub fn init() void {
     _ = ncurses.initscr();
     _ = ncurses.cbreak();
-    // ncurses.keypad(ncurses.stdscr, ncurses.TRUE);
+    _ = ncurses.noecho();
 
     // Set locale for wide characters (must be set before using Unicode)
     _ = locale.setlocale(locale.LC_ALL, "en_US.UTF-8");
@@ -78,11 +78,16 @@ var buffer: [32]u8 = undefined;
 pub fn readLine() []const u8 {
     var len: usize = 0;
 
-    while (len < buffer.len) {
-        const ch = ncurses.getch();
+    while (len < buffer.len) : (_ = ncurses.refresh()) {
+        const ch = @as(u8, @intCast(ncurses.getch()));
         if (ch == '\n') break;
 
-        buffer[len] = @as(u8, @intCast(ch));
+        if (!std.ascii.isAlphanumeric(ch)) {
+            continue; // Skip adding character to buffer
+        }
+
+        _ = ncurses.addch(ch);
+        buffer[len] = ch;
         len += 1;
     }
 
